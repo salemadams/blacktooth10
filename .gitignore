@@ -1,0 +1,46 @@
+# Build output
+build/
+cmake-build-*/
+out/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+compile_commands.json
+
+# IDE / editor
+.vscode/
+.idea/
+.cache/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# JUCE
+JuceLibraryCode/
+Builds/
+*.exporter
+
+# Object / binary files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.app
+*.vst3
+*.component
+*.aaxplugin
+
+# Debug
+*.dSYM/
+*.pdb
+*.ilk
