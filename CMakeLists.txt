@@ -26,6 +26,7 @@ juce_add_plugin(TenBand
 target_sources(TenBand PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    Source/ChainSettings.cpp
     Source/Globals/Band.cpp
     Source/Globals/GainRange.cpp
   )

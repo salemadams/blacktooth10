@@ -7,23 +7,8 @@
 */
 
 #include "PluginProcessor.h"
-#include "Globals/Band.cpp"
+#include "Globals/Band.h"
 #include "Globals/GainRange.h"
-
-struct ChainSettings {
-  float bandOneGain{0};
-  float bandTwoGain{0};
-  float bandThreeGain{0};
-  float bandFourGain{0};
-  float bandFiveGain{0};
-  float bandSixGain{0};
-  float bandSevenGain{0};
-  float bandEightGain{0};
-  float bandNineGain{0};
-  float bandTenGain{0};
-};
-
-ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
 //==============================================================================
 TenBandAudioProcessor::TenBandAudioProcessor()
@@ -47,6 +32,7 @@ TenBandAudioProcessor::~TenBandAudioProcessor()
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout TenBandAudioProcessor::createParameterLayout() {
   return {
+    std::make_unique<juce::AudioParameterFloat>(PreGainId, PreGainName, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
     std::make_unique<juce::AudioParameterFloat>(bandOne.id, bandOne.name, juce::NormalisableRange<float>(MinGain, MaxGain ,GainInterval, GainSkew), GainDefault),
     std::make_unique<juce::AudioParameterFloat>(bandTwo.id, bandTwo.name, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
     std::make_unique<juce::AudioParameterFloat>(bandThree.id, bandThree.name, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
@@ -57,26 +43,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout TenBandAudioProcessor::creat
     std::make_unique<juce::AudioParameterFloat>(bandEight.id, bandEight.name, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
     std::make_unique<juce::AudioParameterFloat>(bandNine.id, bandNine.name, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
     std::make_unique<juce::AudioParameterFloat>(bandTen.id, bandTen.name, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
+    std::make_unique<juce::AudioParameterFloat>(PostGainId, PostGainName, juce::NormalisableRange<float>(MinGain, MaxGain, GainInterval, GainSkew), GainDefault),
   };
 }
 
 
-ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts) {
-  ChainSettings settings;
-
-  settings.bandOneGain   = apvts.getRawParameterValue(bandOne.id)->load();
-  settings.bandTwoGain   = apvts.getRawParameterValue(bandTwo.id)->load();
-  settings.bandThreeGain = apvts.getRawParameterValue(bandThree.id)->load();
-  settings.bandFourGain  = apvts.getRawParameterValue(bandFour.id)->load();
-  settings.bandFiveGain  = apvts.getRawParameterValue(bandFive.id)->load();
-  settings.bandSixGain   = apvts.getRawParameterValue(bandSix.id)->load();
-  settings.bandSevenGain = apvts.getRawParameterValue(bandSeven.id)->load();
-  settings.bandEightGain = apvts.getRawParameterValue(bandEight.id)->load();
-  settings.bandNineGain  = apvts.getRawParameterValue(bandNine.id)->load();
-  settings.bandTenGain   = apvts.getRawParameterValue(bandTen.id)->load();
-
-  return settings;
-}
 
 const juce::String TenBandAudioProcessor::getName() const
 {
@@ -153,12 +124,24 @@ void TenBandAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
   mLeftChain.prepare(spec);
   mRightChain.prepare(spec);
 
-  updateCoefficients();
+  updateSettings();
 }
 
-void TenBandAudioProcessor::updateCoefficients() {
+void TenBandAudioProcessor::updateSettings() {
   auto chainSettings = getChainSettings(apvts);
+  updateGain(chainSettings);
+  updateCoefficients(chainSettings);
+}
 
+void TenBandAudioProcessor::updateGain(ChainSettings& chainSettings) {
+  mRightChain.get<SignalChainPositions::PreGain>().setGainDecibels(chainSettings.preGain);
+  mRightChain.get<SignalChainPositions::PostGain>().setGainDecibels(chainSettings.postGain);
+
+  mLeftChain.get<SignalChainPositions::PreGain>().setGainDecibels(chainSettings.preGain);
+  mLeftChain.get<SignalChainPositions::PostGain>().setGainDecibels(chainSettings.postGain);
+}
+
+void TenBandAudioProcessor::updateCoefficients(ChainSettings& chainSettings) {
   using Coefficients = juce::dsp::IIR::Coefficients<float>;
   using Decibels = juce::Decibels;
 
@@ -171,29 +154,29 @@ void TenBandAudioProcessor::updateCoefficients() {
   auto bandSevenCoeffs = Coefficients::makePeakFilter(mLastSampleRate, bandSeven.centreFreq, bandSeven.qFactor, Decibels::decibelsToGain(chainSettings.bandSevenGain));
   auto bandEightCoeffs = Coefficients::makePeakFilter(mLastSampleRate, bandEight.centreFreq, bandEight.qFactor, Decibels::decibelsToGain(chainSettings.bandEightGain));
   auto bandNineCoeffs  = Coefficients::makePeakFilter(mLastSampleRate, bandNine.centreFreq,  bandNine.qFactor,  Decibels::decibelsToGain(chainSettings.bandNineGain));
-  auto bandTenCoeffs   = Coefficients::makeHighShelf(mLastSampleRate, bandTen.centreFreq,   bandTen.qFactor,   Decibels::decibelsToGain(chainSettings.bandTenGain));
+  auto bandTenCoeffs   = Coefficients::makePeakFilter(mLastSampleRate, bandTen.centreFreq,   bandTen.qFactor,   Decibels::decibelsToGain(chainSettings.bandTenGain));
 
-  *mRightChain.get<ChainPositions::BandOne>().coefficients   = *bandOneCoeffs;
-  *mRightChain.get<ChainPositions::BandTwo>().coefficients   = *bandTwoCoeffs;
-  *mRightChain.get<ChainPositions::BandThree>().coefficients = *bandThreeCoeffs;
-  *mRightChain.get<ChainPositions::BandFour>().coefficients  = *bandFourCoeffs;
-  *mRightChain.get<ChainPositions::BandFive>().coefficients  = *bandFiveCoeffs;
-  *mRightChain.get<ChainPositions::BandSix>().coefficients   = *bandSixCoeffs;
-  *mRightChain.get<ChainPositions::BandSeven>().coefficients = *bandSevenCoeffs;
-  *mRightChain.get<ChainPositions::BandEight>().coefficients = *bandEightCoeffs;
-  *mRightChain.get<ChainPositions::BandNine>().coefficients  = *bandNineCoeffs;
-  *mRightChain.get<ChainPositions::BandTen>().coefficients   = *bandTenCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandOne>().coefficients   = *bandOneCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandTwo>().coefficients   = *bandTwoCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandThree>().coefficients = *bandThreeCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandFour>().coefficients  = *bandFourCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandFive>().coefficients  = *bandFiveCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandSix>().coefficients   = *bandSixCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandSeven>().coefficients = *bandSevenCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandEight>().coefficients = *bandEightCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandNine>().coefficients  = *bandNineCoeffs;
+  *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandTen>().coefficients   = *bandTenCoeffs;
 
-  *mLeftChain.get<ChainPositions::BandOne>().coefficients   = *bandOneCoeffs;
-  *mLeftChain.get<ChainPositions::BandTwo>().coefficients   = *bandTwoCoeffs;
-  *mLeftChain.get<ChainPositions::BandThree>().coefficients = *bandThreeCoeffs;
-  *mLeftChain.get<ChainPositions::BandFour>().coefficients  = *bandFourCoeffs;
-  *mLeftChain.get<ChainPositions::BandFive>().coefficients  = *bandFiveCoeffs;
-  *mLeftChain.get<ChainPositions::BandSix>().coefficients   = *bandSixCoeffs;
-  *mLeftChain.get<ChainPositions::BandSeven>().coefficients = *bandSevenCoeffs;
-  *mLeftChain.get<ChainPositions::BandEight>().coefficients = *bandEightCoeffs;
-  *mLeftChain.get<ChainPositions::BandNine>().coefficients  = *bandNineCoeffs;
-  *mLeftChain.get<ChainPositions::BandTen>().coefficients   = *bandTenCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandOne>().coefficients   = *bandOneCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandTwo>().coefficients   = *bandTwoCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandThree>().coefficients = *bandThreeCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandFour>().coefficients  = *bandFourCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandFive>().coefficients  = *bandFiveCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandSix>().coefficients   = *bandSixCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandSeven>().coefficients = *bandSevenCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandEight>().coefficients = *bandEightCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandNine>().coefficients  = *bandNineCoeffs;
+  *mLeftChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandTen>().coefficients   = *bandTenCoeffs;
 }
 
 void TenBandAudioProcessor::releaseResources()
@@ -237,7 +220,7 @@ void TenBandAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    updateCoefficients();
+    updateSettings();
 
     juce::dsp::AudioBlock<float> block(buffer);
 

@@ -10,6 +10,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "ChainSettings.h"
 
 //==============================================================================
 /**
@@ -56,10 +57,13 @@ public:
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     juce::AudioProcessorValueTreeState apvts{*this, nullptr, "Parameters", createParameterLayout()};
-    void updateCoefficients();
+
+    void updateSettings();
+    void updateGain(ChainSettings& chainSettings);
+    void updateCoefficients(ChainSettings& chainSettings);
 
 private:
-    enum ChainPositions {
+    enum EQChainPositions {
       BandOne,
       BandTwo,
       BandThree,
@@ -69,12 +73,22 @@ private:
       BandSeven,
       BandEight,
       BandNine,
-      BandTen
+      BandTen,
+    };
+
+    enum SignalChainPositions {
+      PreGain,
+      EQ,
+      PostGain
     };
 
     using BandFilter = juce::dsp::IIR::Filter<float>;
 
-    using MonoChain = juce::dsp::ProcessorChain<BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter>;
+    using Gain = juce::dsp::Gain<float>;
+
+    using EQChain = juce::dsp::ProcessorChain<BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter>;
+
+    using MonoChain = juce::dsp::ProcessorChain<Gain, EQChain, Gain>;
 
     MonoChain mLeftChain, mRightChain;
 
