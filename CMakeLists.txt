@@ -25,7 +25,10 @@ juce_add_plugin(TenBand
 
 target_sources(TenBand PRIVATE
     Source/PluginProcessor.cpp
-    Source/PluginEditor.cpp)
+    Source/PluginEditor.cpp
+    Source/Globals/Band.cpp
+    Source/Globals/GainRange.cpp
+  )
 
 target_compile_definitions(TenBand PUBLIC
     JUCE_WEB_BROWSER=0
