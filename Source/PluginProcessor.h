@@ -58,6 +58,12 @@ public:
     juce::AudioProcessorValueTreeState apvts{*this, nullptr, "Parameters", createParameterLayout()};
 
 private:
+    using BandFilter = juce::dsp::IIR::Filter<float>;
+
+    using MonoChain = juce::dsp::ProcessorChain<BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter, BandFilter>;
+
+    MonoChain mLeftChain, mRightChain;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TenBandAudioProcessor)
 };
