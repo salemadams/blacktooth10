@@ -123,8 +123,6 @@ void TenBandAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 
   mLeftChain.prepare(spec);
   mRightChain.prepare(spec);
-
-  updateSettings();
 }
 
 void TenBandAudioProcessor::updateSettings() {
