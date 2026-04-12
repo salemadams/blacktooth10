@@ -154,7 +154,7 @@ void TenBandAudioProcessor::updateCoefficients(ChainSettings& chainSettings) {
   auto bandSevenCoeffs = Coefficients::makePeakFilter(mLastSampleRate, bandSeven.centreFreq, bandSeven.qFactor, Decibels::decibelsToGain(chainSettings.bandSevenGain));
   auto bandEightCoeffs = Coefficients::makePeakFilter(mLastSampleRate, bandEight.centreFreq, bandEight.qFactor, Decibels::decibelsToGain(chainSettings.bandEightGain));
   auto bandNineCoeffs  = Coefficients::makePeakFilter(mLastSampleRate, bandNine.centreFreq,  bandNine.qFactor,  Decibels::decibelsToGain(chainSettings.bandNineGain));
-  auto bandTenCoeffs   = Coefficients::makePeakFilter(mLastSampleRate, bandTen.centreFreq,   bandTen.qFactor,   Decibels::decibelsToGain(chainSettings.bandTenGain));
+  auto bandTenCoeffs   = Coefficients::makeHighShelf(mLastSampleRate, bandTen.centreFreq,   bandTen.qFactor,   Decibels::decibelsToGain(chainSettings.bandTenGain));
 
   *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandOne>().coefficients   = *bandOneCoeffs;
   *mRightChain.get<SignalChainPositions::EQ>().get<EQChainPositions::BandTwo>().coefficients   = *bandTwoCoeffs;
