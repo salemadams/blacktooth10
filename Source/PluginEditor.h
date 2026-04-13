@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "Components/EQSliders.h"
+#include "Components/RotarySlider.h"
 #include "PluginProcessor.h"
 
 //==============================================================================
@@ -24,9 +26,20 @@ public:
     void resized() override;
 
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
     TenBandAudioProcessor& audioProcessor;
+
+    RotarySlider preGainRotarySlider;
+    RotarySlider postGainRotarySlider;
+
+    EQSliders eqSliders;
+
+    using APVTS = juce::AudioProcessorValueTreeState;
+    using Attachment = APVTS::SliderAttachment;
+
+    Attachment preGainSliderAttachment,
+               postGainSliderAttachment;
+
+    std::vector<juce::Component*> getComponents();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TenBandAudioProcessorEditor)
 };

@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "Globals/Band.h"
 #include "Globals/GainRange.h"
+#include "PluginEditor.h"
 
 //==============================================================================
 TenBandAudioProcessor::TenBandAudioProcessor()
@@ -235,13 +236,13 @@ void TenBandAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 //==============================================================================
 bool TenBandAudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return true;
 }
 
 juce::AudioProcessorEditor* TenBandAudioProcessor::createEditor()
 {
- // return new TenBandAudioProcessor (*this);
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new TenBandAudioProcessorEditor (*this);
+    // return new juce::GenericAudioProcessorEditor (*this);
 }
 
 //==============================================================================
