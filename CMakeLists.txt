@@ -31,6 +31,10 @@ target_sources(TenBand PRIVATE
     Source/Globals/GainRange.cpp
   )
 
+juce_add_binary_data(TenBandBinaryData SOURCES
+  Source/Components/LookAndFeel/Assets/MetallicKnobStrip.png
+  Source/Components/LookAndFeel/Assets/AngelWish.ttf)
+
 target_compile_definitions(TenBand PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
@@ -39,6 +43,7 @@ target_compile_definitions(TenBand PUBLIC
 
 target_link_libraries(TenBand
     PRIVATE
+        TenBandBinaryData
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC
